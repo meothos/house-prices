@@ -1,0 +1,111 @@
+# source: Miguel Angel https://www.kaggle.com/miguelangelnieto/pca-and-regression
+
+# librairies
+
+import pandas as pd 
+import numpy as np
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import Imputer
+from sklearn import datasets, linear_model
+from sklearn.metrics import mean_squared_error, r2_score
+
+
+
+#data = pd.read_csv('C:/Users/Mahmood/Documents/datasets/house prices/train.csv') # Reading the file .csv
+train = pd.read_csv('C:/Users/Mahmood/Documents/datasets/house prices/train.csv')
+labels=train["SalePrice"]
+test = pd.read_csv('C:/Users/Mahmood/Documents/datasets/house prices/test.csv')
+data = pd.concat([train,test],ignore_index=True)
+data = data.drop("SalePrice", 1)
+ids = test["Id"]
+
+train.head()
+
+# number of NaNs in each column
+nans=pd.isnull(data).sum()
+nans[nans>0]
+
+# Remove id and columns with more than a thousand missing values
+data=data.drop("Id", 1)
+data=data.drop("Alley", 1)
+data=data.drop("Fence", 1)
+data=data.drop("MiscFeature", 1)
+data=data.drop("PoolQC", 1)
+data=data.drop("FireplaceQu", 1)
+
+# Count the column types
+data.dtypes.value_counts()
+
+
+all_columns = data.columns.values
+non_categorical = ["LotFrontage", "LotArea", "MasVnrArea", "BsmtFinSF1", 
+                   "BsmtFinSF2", "BsmtUnfSF", "TotalBsmtSF", "1stFlrSF", 
+                   "2ndFlrSF", "LowQualFinSF", "GrLivArea", "GarageArea", 
+                   "WoodDeckSF", "OpenPorchSF", "EnclosedPorch", "3SsnPorch", 
+                   "ScreenPorch","PoolArea", "MiscVal"]
+
+categorical = [value for value in all_columns if value not in non_categorical]
+
+
+
+
+# One Hot Encoding and nan transformation
+data = pd.get_dummies(data)
+
+imp = Imputer(missing_values='NaN', strategy='most_frequent', axis=0)
+data = imp.fit_transform(data)
+
+# Log transformation
+data = np.log(data)
+labels = np.log(labels)
+
+# Change -inf to 0 again
+data[data==-np.inf]=0
+
+
+pca = PCA(whiten=True)
+pca.fit(data)
+variance = pd.DataFrame(pca.explained_variance_ratio_)
+np.cumsum(pca.explained_variance_ratio_)
+
+
+pca = PCA(n_components=36,whiten=True)
+pca = pca.fit(data)
+dataPCA = pca.transform(data)
+
+dataPCAtrain=dataPCA[:train.shape[0],:]
+dataPCAtest=dataPCA[train.shape[0]:,:]
+
+# split for model training and testing
+from sklearn.cross_validation import train_test_split
+train2, test2 = train_test_split(dataPCAtrain, test_size=0.25, random_state=42)
+labtrain2, labtest2 = train_test_split(labels, test_size=0.25, random_state=42)
+
+
+# Create linear regression object
+regr = linear_model.LinearRegression()
+# Train the model using the training sets
+regr.fit(train2, labtrain2)
+
+# Make predictions using the testing set
+y_pred = regr.predict(test2)
+
+# The coefficients
+print('Coefficients: \n', regr.coef_)
+# The mean squared error
+print("Mean squared error: %.2f"
+      % mean_squared_error(labtest2, y_pred))
+# Explained variance score: 1 is perfect prediction
+print('Variance score: %.2f' % r2_score(labtest2, y_pred))
+
+
+
+# Train the model for final prediction
+# Create linear regression object
+regr = linear_model.LinearRegression()
+regr.fit(dataPCAtrain, labels)
+
+f_pred = regr.predict(dataPCAtest)
+
+sub = pd.DataFrame({"Id": ids,"SalePrice": np.exp(f_pred)})
+sub.to_csv("C:/Users/Mahmood/Documents/datasets/house prices/house_prices_sub.csv", index=False)
