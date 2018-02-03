@@ -11,10 +11,9 @@ from sklearn.metrics import mean_squared_error, r2_score
 
 
 
-#data = pd.read_csv('C:/Users/Mahmood/Documents/datasets/house prices/train.csv') # Reading the file .csv
-train = pd.read_csv('C:/Users/Mahmood/Documents/datasets/house prices/train.csv')
+train = pd.read_csv('~/train.csv')
 labels=train["SalePrice"]
-test = pd.read_csv('C:/Users/Mahmood/Documents/datasets/house prices/test.csv')
+test = pd.read_csv('~/test.csv')
 data = pd.concat([train,test],ignore_index=True)
 data = data.drop("SalePrice", 1)
 ids = test["Id"]
@@ -108,4 +107,4 @@ regr.fit(dataPCAtrain, labels)
 f_pred = regr.predict(dataPCAtest)
 
 sub = pd.DataFrame({"Id": ids,"SalePrice": np.exp(f_pred)})
-sub.to_csv("C:/Users/Mahmood/Documents/datasets/house prices/house_prices_sub.csv", index=False)
+sub.to_csv("~/house_prices_sub.csv", index=False)
