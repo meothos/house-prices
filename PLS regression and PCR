@@ -1,0 +1,279 @@
+# librairies
+
+import pandas as pd 
+import numpy as np
+import seaborn as sns
+from sklearn.preprocessing import scale
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import Imputer
+from sklearn import datasets, linear_model
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.cross_decomposition import PLSRegression
+import matplotlib.pyplot as plt
+from sklearn.cross_validation import train_test_split
+from sklearn.preprocessing import StandardScaler
+from scipy import stats
+
+
+df_train = pd.read_csv('~/train.csv')
+df_train=df_train.drop("Id", 1) # the Id is useless
+
+
+
+################### exploration ################
+df_train.head()
+df_train.info()
+
+df_train['SalePrice'].describe()
+
+#histogram
+sns.distplot(df_train['SalePrice'])
+
+
+###### categorical variables
+# convert year variables to categorical
+df_train['YearBuilt']=df_train['YearBuilt'].astype(str)
+df_train['YearRemodAdd']=df_train['YearRemodAdd'].astype(str)
+df_train['MoSold']=df_train['MoSold'].astype(str)
+df_train['YrSold']=df_train['YrSold'].astype(str)
+df_train['GarageYrBlt']=df_train['GarageYrBlt'].astype(str)
+
+# visualize corr with SalePrice
+sns.boxplot(x="MSZoning", y="SalePrice", data=df_train)
+sns.boxplot(x="Street", y="SalePrice", data=df_train)
+sns.boxplot(x="Alley", y="SalePrice", data=df_train)
+sns.boxplot(x="LotShape", y="SalePrice", data=df_train)
+sns.boxplot(x="LandContour", y="SalePrice", data=df_train)
+sns.boxplot(x="Utilities", y="SalePrice", data=df_train)
+sns.boxplot(x="LotConfig", y="SalePrice", data=df_train)
+sns.boxplot(x="LandSlope", y="SalePrice", data=df_train)
+sns.boxplot(x="Neighborhood", y="SalePrice", data=df_train)
+sns.boxplot(x="Condition1", y="SalePrice", data=df_train)
+sns.boxplot(x="Condition2", y="SalePrice", data=df_train)
+sns.boxplot(x="BldgType", y="SalePrice", data=df_train)
+sns.boxplot(x="HouseStyle", y="SalePrice", data=df_train)
+sns.boxplot(x="YearBuilt", y="SalePrice", data=df_train)
+sns.boxplot(x="YearRemodAdd", y="SalePrice", data=df_train)
+sns.boxplot(x="RoofStyle", y="SalePrice", data=df_train)
+sns.boxplot(x="RoofMatl", y="SalePrice", data=df_train)
+sns.boxplot(x="Exterior1st", y="SalePrice", data=df_train)
+sns.boxplot(x="Exterior2nd", y="SalePrice", data=df_train)
+sns.boxplot(x="MasVnrType", y="SalePrice", data=df_train)
+sns.boxplot(x="MasVnrArea", y="SalePrice", data=df_train)
+sns.boxplot(x="ExterQual", y="SalePrice", data=df_train)
+sns.boxplot(x="ExterCond", y="SalePrice", data=df_train)
+sns.boxplot(x="Foundation", y="SalePrice", data=df_train)
+sns.boxplot(x="BsmtQual", y="SalePrice", data=df_train)
+sns.boxplot(x="BsmtCond", y="SalePrice", data=df_train)
+sns.boxplot(x="BsmtExposure", y="SalePrice", data=df_train)
+sns.boxplot(x="BsmtFinType1", y="SalePrice", data=df_train)
+sns.boxplot(x="BsmtFinType2", y="SalePrice", data=df_train)
+sns.boxplot(x="Heating", y="SalePrice", data=df_train)
+sns.boxplot(x="HeatingQC", y="SalePrice", data=df_train)
+sns.boxplot(x="CentralAir", y="SalePrice", data=df_train)
+sns.boxplot(x="Electrical", y="SalePrice", data=df_train)
+sns.boxplot(x="BsmtFullBath", y="SalePrice", data=df_train)
+sns.boxplot(x="KitchenQual", y="SalePrice", data=df_train)
+sns.boxplot(x="Functional", y="SalePrice", data=df_train)
+sns.boxplot(x="FireplaceQu", y="SalePrice", data=df_train)
+sns.boxplot(x="GarageType", y="SalePrice", data=df_train)
+sns.boxplot(x="GarageYrBlt", y="SalePrice", data=df_train)
+sns.boxplot(x="GarageFinish", y="SalePrice", data=df_train)
+sns.boxplot(x="GarageQual", y="SalePrice", data=df_train)
+sns.boxplot(x="GarageCond", y="SalePrice", data=df_train)
+sns.boxplot(x="PavedDrive", y="SalePrice", data=df_train)
+sns.boxplot(x="MoSold", y="SalePrice", data=df_train)
+sns.boxplot(x="YrSold", y="SalePrice", data=df_train)
+sns.boxplot(x="SaleType", y="SalePrice", data=df_train)
+sns.boxplot(x="SaleCondition", y="SalePrice", data=df_train)
+
+
+
+###### numeric variables
+#correlation matrix
+corrmat = df_train.corr()
+sns.heatmap(corrmat, vmax=.8, square=True)
+
+#saleprice correlation matrix
+k = 10 #number of variables for heatmap
+cols = corrmat.nlargest(k, 'SalePrice')['SalePrice'].index
+cm = np.corrcoef(df_train[cols].values.T)
+sns.set(font_scale=1.25)
+hm = sns.heatmap(cm, cbar=True, annot=True, square=True, fmt='.2f', annot_kws={'size': 10}, yticklabels=cols.values, xticklabels=cols.values)
+plt.show()
+
+#scatterplot
+sns.set()
+cols = ['SalePrice', 'OverallQual', 'GrLivArea', 'GarageCars', 'TotalBsmtSF', 'FullBath']
+sns.pairplot(df_train[cols], size = 2.5)
+plt.show()
+
+
+
+
+###### missing data
+total = df_train.isnull().sum().sort_values(ascending=False)
+percent = (df_train.isnull().sum()/df_train.isnull().count()).sort_values(ascending=False)
+missing_data = pd.concat([total, percent], axis=1, keys=['Total', 'Percent'])
+missing_data.head(20)
+
+# we change to 0 for the 3 last variables, and remove the others
+df_train.loc[:, "MasVnrType"] = df_train.loc[:, "MasVnrType"].fillna("None")
+df_train.loc[:, "MasVnrArea"] = df_train.loc[:, "MasVnrArea"].fillna(0)
+df_train['Electrical'] = df_train['Electrical'].fillna(df_train['Electrical'].mode()[0])
+
+df_train = df_train.drop((missing_data[missing_data['Total'] > 0]).index,1)
+df_train.isnull().sum().max() # no more missing data missing
+
+
+
+# log transform skewed numeric features:
+numeric_feats = df_train.dtypes[df_train.dtypes != "object"].index
+skewed_feats = df_train[numeric_feats].apply(lambda x: skew(x)) #compute skewness
+skewed_feats = skewed_feats[skewed_feats > 1]
+skewed_feats = skewed_feats.index
+df_train[skewed_feats] = np.log1p(df_train[skewed_feats])
+
+#convert categorical variable into dummy
+df_train = pd.get_dummies(df_train)
+
+
+# prepare the test set
+df_test = pd.read_csv('~/test.csv')
+ids = df_test["Id"]
+df_test = df_test.drop("Id", 1)
+
+# missing data
+totalt = df_test.isnull().sum().sort_values(ascending=False)
+percentt = (df_test.isnull().sum()/df_test.isnull().count()).sort_values(ascending=False)
+missing_datat = pd.concat([totalt, percentt], axis=1, keys=['Total', 'Percent'])
+missing_datat.head(20)
+# MasVnrType : NA most likely means no veneer
+df_test.loc[:, "MasVnrType"] = df_test.loc[:, "MasVnrType"].fillna("None")
+df_test.loc[:, "MasVnrArea"] = df_test.loc[:, "MasVnrArea"].fillna(0)
+for col in ('BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF','TotalBsmtSF', 'BsmtFullBath', 'BsmtHalfBath', 'GarageArea', 'GarageCars'):
+    df_test[col] = df_test[col].fillna(0)
+df_test = df_test.drop((missing_data[missing_data['Total'] > 0]).index,1)
+
+df_test = pd.get_dummies(df_test)
+
+skewed_test=skewed_feats.drop('SalePrice')
+df_test[skewed_test] = np.log1p(df_test[skewed_test])
+
+
+# drop the dummies not in test set
+coltrain=df_train.columns.values
+coltest = df_test.columns.values
+varX=list(set(coltrain)-set(coltest))
+varX.remove('SalePrice')
+for var in varX:
+    df_train=df_train.drop(var, 1)
+
+
+
+
+################ modelling exploration
+
+# split for model training and testing
+train, test = train_test_split(df_train, test_size=0.25, random_state=42)
+
+y_train=np.log(train["SalePrice"])
+X_train = train.drop("SalePrice", 1)
+y_test=np.log(test["SalePrice"])
+X_test = test.drop("SalePrice", 1)
+
+
+##################### PCR
+scaling=StandardScaler()
+
+pca=PCA()
+# Scale the data
+
+X_scale_train = scaling.fit_transform(X_train)
+X_scale_test = scaling.transform(X_test)
+
+X_reduced_train = pca.fit_transform(X_scale_train)
+X_reduced_test = pca.transform(X_scale_test)
+
+
+mse_pcr = []
+mse_pls = []
+r2_pcr = []
+r2_pls = []
+
+# Calculate MSE using CV for the 30 principle components, adding one component at the time.
+for i in np.arange(1, 50):
+    # Create linear regression object
+    pcr = linear_model.LinearRegression() # PCR
+    pls = PLSRegression(n_components=i) # PLS
+    # Train the model using the training sets
+    pcr.fit(X_reduced_train[:,:i], y_train)
+    pls.fit(X_scale_train, y_train)
+
+    # Make predictions using the testing set
+    y_pcr = pcr.predict(X_reduced_test[:,:i])
+    y_pls = pls.predict(X_scale_test)
+    
+    m_pcr=np.sqrt(mean_squared_error(y_test, y_pcr))
+    r_pcr=r2_score(y_test, y_pcr)
+    mse_pcr.append(m_pcr)
+    r2_pcr.append(r_pcr)
+    
+    m_pls=np.sqrt(mean_squared_error(y_test, y_pls))
+    r_pls=r2_score(y_test, y_pls)
+    mse_pls.append(m_pls)
+    r2_pls.append(r_pls)
+
+    
+dim = np.arange(1, 50)
+# plot MSE PCR
+plt.plot(dim,np.array(mse_pcr), '-v')
+plt.xlabel('Number of principal components in regression')
+plt.ylabel('MSE PCR')
+plt.title('SalePrice')
+
+# plot PLS
+plt.plot(dim,np.array(mse_pls), '-v')
+plt.xlabel('Number of principal components in regression')
+plt.ylabel('MSE PLS')
+plt.title('SalePrice')
+
+# plot r2
+plt.plot(dim,np.array(r2_pcr), '-v')
+plt.xlabel('Number of principal components in regression')
+plt.ylabel('R2 PCR')
+plt.title('SalePrice')
+
+plt.plot(dim,np.array(r2_pls), '-v')
+plt.xlabel('Number of principal components in regression')
+plt.ylabel('R2 PLS')
+plt.title('SalePrice')
+     
+# The PLS regression with 14 components seems the best
+
+
+
+
+
+
+
+############# PREDICTION
+
+y=df_train["SalePrice"]
+X = df_train.drop("SalePrice", 1)
+
+scaling=StandardScaler()
+pca2=PCA()
+# Scale the data
+X_s = scaling.fit_transform(X)
+X_sp = scaling.transform(df_test)
+
+
+# Create linear regression object
+pls2 = PLSRegression(n_components=14) # PLS
+# Train the model using the training sets
+pls2.fit(X_s, y)
+y_pls = pls2.predict(X_sp)
+
+sub = pd.DataFrame({"Id": ids,"SalePrice": np.exp(pd.Series(y_pls[:,0]))})
+sub.to_csv("~/house_prices_sub_pls.csv", index=False)
