@@ -31,12 +31,6 @@ sns.distplot(df_train['SalePrice'])
 
 
 ###### categorical variables
-# convert year variables to categorical
-df_train['YearBuilt']=df_train['YearBuilt'].astype(str)
-df_train['YearRemodAdd']=df_train['YearRemodAdd'].astype(str)
-df_train['MoSold']=df_train['MoSold'].astype(str)
-df_train['YrSold']=df_train['YrSold'].astype(str)
-df_train['GarageYrBlt']=df_train['GarageYrBlt'].astype(str)
 
 # visualize corr with SalePrice
 sns.boxplot(x="MSZoning", y="SalePrice", data=df_train)
@@ -129,7 +123,7 @@ df_train.isnull().sum().max() # no more missing data missing
 
 # log transform skewed numeric features:
 numeric_feats = df_train.dtypes[df_train.dtypes != "object"].index
-skewed_feats = df_train[numeric_feats].apply(lambda x: skew(x)) #compute skewness
+skewed_feats = df_train[numeric_feats].apply(lambda x: stats.skew(x)) #compute skewness
 skewed_feats = skewed_feats[skewed_feats > 1]
 skewed_feats = skewed_feats.index
 df_train[skewed_feats] = np.log1p(df_train[skewed_feats])
@@ -249,7 +243,7 @@ plt.xlabel('Number of principal components in regression')
 plt.ylabel('R2 PLS')
 plt.title('SalePrice')
      
-# The PLS regression with 14 components seems the best
+# The PLS regression with 13 components seems the best
 
 
 
@@ -270,7 +264,7 @@ X_sp = scaling.transform(df_test)
 
 
 # Create linear regression object
-pls2 = PLSRegression(n_components=14) # PLS
+pls2 = PLSRegression(n_components=13) # PLS
 # Train the model using the training sets
 pls2.fit(X_s, y)
 y_pls = pls2.predict(X_sp)
